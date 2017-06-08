@@ -11,6 +11,8 @@ import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
+import com.jonathan.routes.CourseRoutes;
+import com.jonathan.routes.UserRoutes;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletionStage;
@@ -26,26 +28,21 @@ public class Application extends AllDirectives {
 
         Application app = new Application();
 
-        final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.route().flow(system, materializer);
+        final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.allRoutes().flow(system, materializer);
         final CompletionStage<ServerBinding> binding = http.bindAndHandle(flow, ConnectHttp.toHost("localhost", 8080), materializer);
 
         log.info("Server online at http://localhost:8080\nPress RETURN to stop.");
-        System.in.read();
+        int read = System.in.read();
 
         binding
                 .thenCompose(ServerBinding::unbind)
                 .thenAccept(unbound -> system.terminate());
     }
 
-    private Route route() {
+    private Route allRoutes() {
         return route(
-                path("hello", () ->
-                        route(
-                                get(() -> complete("You just did a GET")),
-                                post(() -> complete("You just did a POST")),
-                                put(() -> complete("You just did a PUT"))
-                        )
-                )
+                new CourseRoutes().routes(),
+                new UserRoutes().routes()
         );
     }
 
